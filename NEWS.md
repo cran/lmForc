@@ -41,3 +41,23 @@
 * Added `states_weighted_forc()` function for computing state weighted forecasts.
 
 * Changed name of `mse_weighted_forc()` to `performance_weighted_forc()` to reflect that errors may be either MSE or RMSE.
+
+# lmForc 0.1.1
+
+* Added `mae()` and `mape()` as options for the `errors` argument in `states_weighted_forc()` and `performance_weighted_forc()`.
+
+* Altered `forc2df()` so that if only one Forecast object is converted to a data.frame the forecast column is named "forecast".
+
+# lmForc 1.0.0
+
+* Added `is_forc_general()` function for evaluating in-sample forecasts with any general model.
+
+* Added `oos_realized_forc_general()` function for evaluating out-of-sample forecasts with any general model.
+
+* Added `oos_vintage_forc_general()` function for evaluating out-of-sample forecasts conditioned on vintage forecasts with any general model.
+
+* Added `conditional_forc_general()` function for computing out-of-sample conditional forecasts with any general model.
+
+* Added a number of functions for subsetting and extracting information from `Forecast` objects: `subset_forcs()`, `subset_bytime()`, `subset_identical()`.
+
+* Added a number of functions for transforming `Forecast` objects: `convert_bytime()`, `transform_bytime()`, `convert_byh()`, `transform_byh()`.

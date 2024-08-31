@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -50,9 +50,30 @@ data <- data.frame(date, y, x1, x2)
 head(data)
 
 ## -----------------------------------------------------------------------------
+date <- as.Date(c("2010-03-31", "2010-06-30", "2010-09-30", "2010-12-31",
+                  "2011-03-31", "2011-06-30", "2011-09-30", "2011-12-31", 
+                  "2012-03-31", "2012-06-30", "2012-09-30", "2012-12-31",
+                  "2013-03-31", "2013-06-30", "2013-09-30", "2013-12-31"))
+y  <- c(1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0)
+x1 <- c(8.22, 3.86, 4.27, 3.37, 5.88, 3.34, 2.92, 1.80, 3.30, 7.17, 3.22, 3.86, 4.27, 3.37, 5.88, 3.34)
+x2 <- c(4.03, 2.46, 2.04, 2.44, 6.09, 2.91, 1.68, 2.91, 3.87, 1.63, 4.03, 2.46, 2.04, 2.44, 6.09, 2.91)
+dataLogit <- data.frame(date, y, x1, x2)
+
+head(dataLogit)
+
+## -----------------------------------------------------------------------------
 is_forc(
   lm_call  = lm(y ~ x1 + x2, data),
   time_vec = data$date
+)
+
+## -----------------------------------------------------------------------------
+is_forc_general(
+  model_function = function(data) {glm(y ~ x1 + x2, data = data, family = binomial)},
+  prediction_function = function(model_function, data) {as.vector(predict(model_function, data, type = "response"))}, 
+  data = dataLogit,
+  realized = dataLogit$y,
+  time_vec = dataLogit$date
 )
 
 ## -----------------------------------------------------------------------------
@@ -66,13 +87,17 @@ oos_realized_forc(
 )
 
 ## -----------------------------------------------------------------------------
-oos_lag_forc(
-  lm_call = lm(y ~ x1 + x2, data),
-  h_ahead = 2L,
-  estimation_end = as.Date("2011-03-31"),
-  time_vec = data$date,
-  estimation_window = NULL,
-  return_betas = FALSE
+forc <- oos_realized_forc_general(
+    model_function = function(data) {glm(y ~ x1 + x2, data = data, family = binomial)},
+    prediction_function = function(model_function, data) {
+      as.vector(predict(model_function, data, type = "response"))
+    }, 
+    data = dataLogit,
+    realized = dataLogit$y,
+    h_ahead = 2L,
+    estimation_end = as.Date("2012-06-30"),
+    time_vec = dataLogit$date,
+    estimation_window = NULL
 )
 
 ## -----------------------------------------------------------------------------
@@ -101,6 +126,36 @@ oos_vintage_forc(
 )
 
 ## -----------------------------------------------------------------------------
+x1_forecast_vintageLogit <- Forecast(
+   origin   = as.Date(c("2012-09-30", "2012-12-31", "2013-03-31", "2013-06-30")),
+   future   = as.Date(c("2013-09-30", "2013-12-31", "2014-03-31", "2014-06-30")),
+   forecast = c(6.34, 4.17, 2.98, 1.84),
+   realized = c(5.88, 3.34, 2.92, 1.80),
+   h_ahead  = 4L
+)
+
+x2_forecast_vintageLogit <- Forecast(
+   origin   = as.Date(c("2012-09-30", "2012-12-31", "2013-03-31", "2013-06-30")),
+   future   = as.Date(c("2013-09-30", "2013-12-31", "2014-03-31", "2014-06-30")),
+   forecast = c(7.32, 3.22, 2.21, 2.65),
+   realized = c(6.09, 2.91, 1.68, 2.91),
+   h_ahead  = 4L
+)
+
+oos_vintage_forc_general(
+    model_function = function(data) {glm(y ~ x1 + x2, data = data, family = binomial)},
+    prediction_function = function(model_function, data) {
+        names(data) <- c("x1", "x2")
+        as.vector(predict(model_function, data, type = "response"))
+    }, 
+    data = dataLogit,
+    realized = dataLogit$y,
+    time_vec = dataLogit$date,
+    x1_forecast_vintageLogit, x2_forecast_vintageLogit,
+    estimation_window = NULL
+)
+
+## -----------------------------------------------------------------------------
 x1_forecast <- Forecast(
    origin   = as.Date(c("2012-06-30", "2012-06-30", "2012-06-30", "2012-06-30")),
    future   = as.Date(c("2012-09-30", "2012-12-31", "2013-03-31", "2013-06-30")),
@@ -121,6 +176,45 @@ conditional_forc(
   lm_call = lm(y ~ x1 + x2, data),
   time_vec = data$date,
   x1_forecast, x2_forecast
+)
+
+## -----------------------------------------------------------------------------
+# Parameter Forecasts.
+x1_forecastLogit <- Forecast(
+   origin   = as.Date(c("2013-12-31", "2013-12-31", "2013-12-31", "2013-12-31")),
+   future   = as.Date(c("2014-03-31", "2014-06-30", "2014-09-30", "2014-12-31")),
+   forecast = c(2.11, 6.11, 6.75, 4.30),
+   realized = NULL,
+   h_ahead  = NULL
+)
+
+x2_forecastLogit <- Forecast(
+   origin   = as.Date(c("2013-12-31", "2013-12-31", "2013-12-31", "2013-12-31")),
+   future   = as.Date(c("2014-03-31", "2014-06-30", "2014-09-30", "2014-12-31")),
+   forecast = c(1.98, 7.44, 7.86, 5.98),
+   realized = NULL,
+   h_ahead  = NULL
+)
+
+conditional_forc_general(
+    model_function = function(data) {glm(y ~ x1 + x2, data = data, family = binomial)},
+    prediction_function = function(model_function, data) {
+        names(data) <- c("x1", "x2")
+        as.vector(predict(model_function, data, type = "response"))
+    }, 
+    data = dataLogit,
+    time_vec = dataLogit$date,
+    x1_forecastLogit, x2_forecastLogit
+)
+
+## -----------------------------------------------------------------------------
+oos_lag_forc(
+  lm_call = lm(y ~ x1 + x2, data),
+  h_ahead = 2L,
+  estimation_end = as.Date("2011-03-31"),
+  time_vec = data$date,
+  estimation_window = NULL,
+  return_betas = FALSE
 )
 
 ## -----------------------------------------------------------------------------
@@ -224,4 +318,129 @@ states_weighted_forc(
   errors = "mse",
   return_weights = FALSE
 )
+
+## ----example101, message=FALSE------------------------------------------------
+forc1_1h <- Forecast(
+  origin = as.Date(c("2010-02-17", "2010-05-14", "2010-07-22", "2010-12-05", "2011-03-10")),
+  future = as.Date(c("2010-06-30", "2010-09-30", "2010-12-31", "2011-03-31", "2011-06-30")),
+  forecast = c(4.27, 3.36, 4.78, 5.45, 5.12),
+  realized = c(4.96, 4.17, 4.26, 4.99, 5.38),
+  h_ahead = 1
+)
+
+forc2_1h <- Forecast(
+  origin = as.Date(c("2010-02-17", "2010-05-14", "2010-07-22", "2010-12-22", "2011-03-27")),
+  future = as.Date(c("2010-06-30", "2010-09-30", "2010-12-31", "2011-03-31", "2011-06-30")),
+  forecast = c(4.01, 3.89, 3.31, 4.33, 4.61),
+  realized = c(4.96, 4.17, 4.26, 4.99, 5.38),
+  h_ahead = 1
+)
+
+## ----example104, message=FALSE------------------------------------------------
+forcs <- list(forc1_1h, forc2_1h)
+
+subset_forcs(forcs, 2:3)
+
+## ----example105, message=FALSE------------------------------------------------
+forcs <- list(forc1_1h, forc2_1h)
+ 
+subset_bytime(
+  forcs, 
+  values = as.Date(c("2010-09-30", "2010-12-31", "2011-03-31")), 
+  slot = "future"
+)
+
+## ----example106, message=FALSE------------------------------------------------
+forcs <- list(forc1_1h, forc2_1h)
+
+subset_identical(forcs, slot = "origin")
+
+## ----example108, message=FALSE------------------------------------------------
+
+forc1_t1 <- Forecast(
+  origin = as.Date(c("2010-02-17", "2010-02-17", "2010-02-17")),
+  future = as.Date(c("2010-06-30", "2010-09-30", "2010-12-31")),
+  forecast = c(4.27, 3.77, 3.52),
+  realized = c(4.96, 4.17, 4.26),
+  h_ahead = NA
+)
+
+forc1_t2 <- Forecast(
+  origin = as.Date(c("2010-05-14", "2010-05-14", "2010-05-14")),
+  future = as.Date(c("2010-09-30", "2010-12-31", "2011-03-31")),
+  forecast = c(3.36, 3.82, 4.22),
+  realized = c(4.17, 4.26, 4.99),
+  h_ahead = NA
+)
+
+forc1_t3 <- Forecast(
+  origin = as.Date(c("2010-07-22", "2010-07-22", "2010-07-22")),
+  future = as.Date(c("2010-12-31", "2011-03-31", "2011-06-30")),
+  forecast = c(4.78, 4.53, 5.03),
+  realized = c(4.26, 4.99, 5.33),
+  h_ahead = NA
+)
+
+forc1_t4 <- Forecast(
+  origin = as.Date(c("2010-12-22", "2010-12-22", "2010-12-22")),
+  future = as.Date(c("2011-03-31", "2011-06-30", "2011-09-30")),
+  forecast = c(5.45, 4.89, 5.78),
+  realized = c(4.99, 5.33, 5.21),
+  h_ahead = NA
+)
+
+forcs_time_format <- list(forc1_t1, forc1_t2, forc1_t3, forc1_t4)
+
+
+## ----example109, message=FALSE------------------------------------------------
+
+forc1_1h <- Forecast(
+  origin = as.Date(c("2010-02-17", "2010-05-14", "2010-07-22", "2010-12-22")),
+  future = as.Date(c("2010-06-30", "2010-09-30", "2010-12-31", "2011-03-31")),
+  forecast = c(4.27, 3.36, 4.78, 5.45),
+  realized = c(4.96, 4.17, 4.26, 4.99),
+  h_ahead = 1
+)
+
+forc1_2h <- Forecast(
+  origin = as.Date(c("2010-02-17", "2010-05-14", "2010-07-22", "2010-12-22")),
+  future = as.Date(c("2010-09-30", "2010-12-31", "2011-03-31", "2011-06-30")),
+  forecast = c(3.77, 3.82, 4.53, 4.89),
+  realized = c(4.17, 4.26, 4.99, 5.33),
+  h_ahead = 2
+)
+
+forc1_3h <- Forecast(
+  origin = as.Date(c("2010-02-17", "2010-05-14", "2010-07-22", "2010-12-22")),
+  future = as.Date(c("2010-12-31", "2011-03-31", "2011-06-30", "2011-09-30")),
+  forecast = c(3.52, 4.22, 5.03, 5.78),
+  realized = c(4.26, 4.99, 5.33, 5.21),
+  h_ahead = 3
+)
+
+forcs_h_ahead_format <- list(forc1_1h, forc1_2h, forc1_3h)
+
+
+## ----example110, message=FALSE------------------------------------------------
+
+convert_bytime(
+  forcs_h_ahead_format,
+  value = as.Date(c("2010-07-22", "2010-12-22")),
+  slot = "origin"
+)
+
+
+
+## ----example111, message=FALSE------------------------------------------------
+
+transform_bytime(forcs_h_ahead_format, slot = "origin")
+
+
+## ----example112, message=FALSE------------------------------------------------
+convert_byh(forcs_time_format, index = 1:2, h_aheads = c(1, 2))
+
+## ----example113, message=FALSE------------------------------------------------
+
+transform_byh(forcs_time_format, h_aheads = c(1, 2, 3))
+
 

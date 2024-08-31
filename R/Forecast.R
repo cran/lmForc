@@ -120,11 +120,11 @@ setValidity("Forecast", function(object) {
     "@origin, @future, @forecast, and @realized must be the same length"
   }
 
-  else if (class(object@forecast) != "numeric") {
+  else if (inherits(object@forecast, "numeric") == FALSE) {
     "@forecast must be a numeric object"
   }
 
-  else if (class(object@realized) != "numeric") {
+  else if (inherits(object@realized, "numeric") == FALSE) {
     "@realized must be a numeric object"
   }
 
@@ -1046,8 +1046,12 @@ forc2df <- function(...) {
 
   forecast_vecs <- lapply(forecasts, function(x) x@forecast)
   forecasts <- data.frame(do.call(cbind, forecast_vecs))
-  colnames(forecasts) <- forecast_names
-
+  
+  if (length(forecast_names) == 1) {
+    colnames(forecasts) <- "forecast"
+  } else {
+    colnames(forecasts) <- forecast_names
+  }
+  
   cbind(origin, future, forecasts, realized)
-
 }
